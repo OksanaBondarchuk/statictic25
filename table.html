@@ -10,7 +10,15 @@
 <style>
 :root{--pr:#822020;--pr-d:#5c1010;--pr-l:#f9eaea;--acc:#C8A217;--acc-l:#fdf7e2;--sw:272px}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',system-ui,sans-serif;background:#f4f4f7;color:#1a1a2e;display:flex;min-height:100vh}
+body {
+  font-family: 'Montserrat', sans-serif;
+  font-display: swap;
+  background: #f4f4f7;
+  color: #1a1a2e;
+  display: flex;
+  min-height: 100vh;
+}
+
 
 /* sidebar */
 .sidebar{width:var(--sw);height:100vh;background:linear-gradient(175deg,var(--pr-d) 0%,var(--pr) 100%);position:fixed;top:0;left:0;z-index:100;display:flex;flex-direction:column;box-shadow:4px 0 24px rgba(0,0,0,.28);overflow:hidden}
@@ -184,6 +192,18 @@ tr.editing td{background:#fffde7 !important}
           <option>Бакалавр</option><option>Магістр</option><option>Доктор філософії</option>
         </select>
       </div>
+
+        <!-- НОВИЙ ФІЛЬТР: Форма навчання -->
+  <div class="fg">
+    <label>Форма навчання</label>
+    <select id="fForm" onchange="applyFilters()">
+      <option value="">Всі форми</option>
+      <option value="full">Денна</option>
+      <option value="part">Заочна</option>
+      <option value="even">Вечірня</option>
+    </select>
+  </div>
+      
       <div class="fg">
         <label>Основа вступу</label>
         <select id="fBase" onchange="applyFilters()">
@@ -436,16 +456,29 @@ function addRow() {
 function applyFilters() {
   const deg  = document.getElementById('fDeg').value;
   const base = document.getElementById('fBase').value;
-  const spec = document.getElementById('fSpec').value.toLowerCase();
+  const spec = document.getElementById('fSpec').value; // Тепер тут буде точне значення зі списку
+  const form = document.getElementById('fForm').value;
+
   filtered = allData
     .map((r, i) => ({ r, i }))
     .filter(({ r }) => {
-      if (deg  && r[0] !== deg)  return false;
+      // 1. Фільтр по ступеню
+      if (deg && r[0] !== deg) return false;
+      
+      // 2. Фільтр по основі вступу
       if (base && r[1] !== base) return false;
-      if (spec && !r[3].toLowerCase().includes(spec) && !r[2].toLowerCase().includes(spec)
-               && !r[4].toLowerCase().includes(spec)) return false;
+      
+      // 3. Фільтр по спеціальності (точний збіг)
+      if (spec && r[3] !== spec) return false;
+      
+      // 4. ЛОГІКА ФОРМИ НАВЧАННЯ (Перевіряємо суму відповідних колонок)
+      if (form === 'full' && (r[5] + r[6]) === 0) return false; // Денна (бюджет + контракт)
+      if (form === 'part' && (r[7] + r[8]) === 0) return false; // Заочна (бюджет + контракт)
+      if (form === 'even' && (r[9] + r[10]) === 0) return false; // Вечірня (бюджет + контракт)
+      
       return true;
     });
+
   if (sortKey) doSort(sortKey, false);
   curPage = 1;
   render();
@@ -455,6 +488,7 @@ function resetFilters() {
   document.getElementById('fDeg').value = '';
   document.getElementById('fBase').value = '';
   document.getElementById('fSpec').value = '';
+  document.getElementById('fForm').value = ''; // Очищення форми
   applyFilters();
 }
 
